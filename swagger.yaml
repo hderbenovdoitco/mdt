@@ -1,0 +1,297 @@
+openapi: 3.0.0
+servers:
+  - url: 'http://localhost:3000'
+    description: Local server
+info:
+  title: MultiDevTools API
+  description: Swagger documentation for API
+  version: 0.0.1
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Unauthorized
+    InternalServerError:
+      description: Internal Server Error
+paths:
+  /user/register:
+    post:
+      summary: Register user
+      tags:
+        - user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                email:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 32
+                gender:
+                  type: string
+                  enum:
+                    - Male
+                    - Female
+                    - Other
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - gender
+      responses:
+        '201':
+          description: User created
+        '400':
+          description: Validation errors
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  '/user/register-confirm/{hash}':
+    post:
+      summary: Confirm user registration
+      tags:
+        - user
+      parameters:
+        - in: path
+          name: hash
+          schema:
+            type: string
+          required: true
+          description: Confirmation token
+      responses:
+        '200':
+          description: Registration confirmed
+        '400':
+          description: Confirmation token expired
+        '404':
+          description: Confirmation not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/login:
+    post:
+      summary: Login user
+      tags:
+        - user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: user access token (15m expiration)
+                  refreshToken:
+                    type: string
+                    description: user refresh token (1h expiration)
+        '400':
+          description: >-
+            Validation errors | Invalid email or password | Email is not
+            confirmed
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/refreshTokens:
+    post:
+      summary: Refresh user tokens
+      security:
+        - Bearer: []
+      tags:
+        - user
+      responses:
+        '200':
+          description: Successful token refresh
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: user access token (15m expiration)
+                  refreshToken:
+                    type: string
+                    description: user refresh token (1h expiration)
+        '400':
+          description: Validation errors | Not refresh token is provided | Token expired
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/logout:
+    post:
+      security:
+        - Bearer: []
+      summary: Logout user
+      tags:
+        - user
+      responses:
+        '200':
+          description: Successful logout
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/resendConfirmEmail:
+    post:
+      summary: >-
+        Resend confirmation email about user registration / prolongate email
+        confirmation for 24 hours
+      tags:
+        - user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required:
+                - email
+      responses:
+        '200':
+          description: Email was resent
+        '400':
+          description: Validation errors | User is already confirmed
+        '404':
+          description: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/resetPassword:
+    post:
+      summary: >-
+        Initiate user password reset / prolongate reset confirmation for 24
+        hours
+      tags:
+        - user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required:
+                - email
+      responses:
+        '200':
+          description: Email with user password reset was sent
+        '400':
+          description: Validation errors | Email is not confirmed
+        '404':
+          description: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  '/user/resetPassword-confirm/{hash}':
+    post:
+      summary: Confirm user password reset
+      tags:
+        - user
+      parameters:
+        - in: path
+          name: hash
+          schema:
+            type: string
+          required: true
+          description: Confirmation token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 32
+              required:
+                - password
+      responses:
+        '200':
+          description: Email with user password reset was sent
+        '400':
+          description: >-
+            Validation errors | Confirmation token expired | Cannot set the same
+            password
+        '404':
+          description: Confirmation not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /user/dashboard:
+    get:
+      summary: Load user dashboard
+      security:
+        - Bearer: []
+      tags:
+        - user
+      responses:
+        '200':
+          description: Data was loaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  email:
+                    type: string
+                  emailConfirmation:
+                    type: boolean
+                  gender:
+                    type: string
+                  created:
+                    type: string
+                    format: date-time
+                  lastVisited:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: User not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'

@@ -1,0 +1,11 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+    </head>
+    <body>
+      Confirmation is due to: {{expirationDate}} UTC
+        <form action=http://localhost:3000/user/register-confirm/{{hash}} method="POST">
+            <input type="submit" value="Confirm registration" />
+        </form>
+    </body>
+</html>
